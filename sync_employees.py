@@ -19,7 +19,7 @@ from core import sync
 from core.db import db
 
 
-def sync_employees(include_staff=True, include_associates=True, active_only=False, deactivate_missing=False):
+def sync_employees(include_staff=None, include_associates=None, active_only=None, deactivate_missing=None, deactivate_unselected=None):
     app = create_app()
     with app.app_context():
         odbc = app.config.get("SOURCE_ODBC")
@@ -37,6 +37,24 @@ def sync_employees(include_staff=True, include_associates=True, active_only=Fals
         staff_fetched = 0
         associates_fetched = 0
         records = []
+
+        cfg = sync.get_sync_config()
+        saved_views = cfg.get("views", ["view_EmployeeMaster_Report_Staff"])
+
+        if include_staff is None and include_associates is None:
+            include_staff = any("staff" in v.lower() for v in saved_views)
+            include_associates = any("associates" in v.lower() for v in saved_views)
+        elif include_staff is None:
+            include_staff = True
+        elif include_associates is None:
+            include_associates = True
+
+        if active_only is None:
+            active_only = cfg.get("active_only", False)
+        if deactivate_missing is None:
+            deactivate_missing = cfg.get("deactivate_missing", False)
+        if deactivate_unselected is None:
+            deactivate_unselected = True
 
         views = dict(app.config.get("SOURCE_VIEWS", {}))
         if include_staff and not include_associates:
@@ -56,7 +74,7 @@ def sync_employees(include_staff=True, include_associates=True, active_only=Fals
                 records += sync.normalize(header, rows, source)
 
             records.sort(key=lambda r: sync.SOURCE_PRIORITY.get(r["source"], 9), reverse=True)
-            stats = sync.upsert(records, deactivate_missing=deactivate_missing)
+            stats = sync.upsert(records, deactivate_missing=deactivate_missing, deactivate_unselected=deactivate_unselected)
             db.session.commit()
             duration = round(time.time() - start_time, 2)
             total_upserted = stats["inserted"] + stats["updated"]

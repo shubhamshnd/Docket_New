@@ -25,46 +25,46 @@
 {% block heading %}{{ 'Edit & resubmit ' ~ req.req_no if req.id else 'Guest requisition form' }}{% endblock %}
 {% macro guest_row(gst) %}
   <tr data-row>
-    <td class="rownum muted"></td>
-    <td style="min-width:360px;vertical-align:top;">
-      <input type="text" name="g_name" value="{{ gst.name or '' }}" aria-label="Guest name" required style="width:100%;box-sizing:border-box;">
-      <div class="guest-ticket-uploads" style="display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:6px;flex-wrap:nowrap;">
-        <div class="ticket-upload-btn-wrap" style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">
+    <td class="rownum muted" style="text-align:center;font-size:11.5px;vertical-align:middle;padding:4px 2px;"></td>
+    <td style="min-width:170px;vertical-align:top;padding:4px 3px;">
+      <input type="text" name="g_name" value="{{ gst.name or '' }}" aria-label="Guest name" placeholder="Full name" required style="width:100%;box-sizing:border-box;">
+      <div class="guest-ticket-uploads" style="display:flex;flex-direction:row;align-items:center;gap:4px;margin-top:4px;flex-wrap:wrap;">
+        <div class="ticket-upload-btn-wrap" style="display:inline-flex;align-items:center;gap:2px;flex-shrink:0;">
           <input type="hidden" name="g_arrival_ticket_existing" value="{{ gst.arrival_ticket or '' }}">
-          <label class="btn btn-xs ticket-upload-btn" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;background:{{ '#f0fdf4' if gst.arrival_ticket else '#f8fafc' }};border:1px solid {{ '#86efac' if gst.arrival_ticket else '#cbd5e1' }};border-radius:4px;color:{{ '#166534' if gst.arrival_ticket else '#334155' }};cursor:pointer;white-space:nowrap;line-height:1.2;margin:0;" title="Upload arrived travel ticket">
+          <label class="btn btn-xs ticket-upload-btn" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 5px;background:{{ '#f0fdf4' if gst.arrival_ticket else '#f8fafc' }};border:1px solid {{ '#86efac' if gst.arrival_ticket else '#cbd5e1' }};border-radius:4px;color:{{ '#166534' if gst.arrival_ticket else '#334155' }};cursor:pointer;white-space:nowrap;line-height:1.2;margin:0;" title="Upload arrived travel ticket">
             <input type="file" name="g_arrival_ticket" class="ticket-file-input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;" onchange="handleTicketFileSelect(this, 'Arrived')">
-            <span class="upload-label">Upload Arrived travel ticket</span>
+            <span class="upload-label">📎 Arrived ticket</span>
           </label>
           {% if gst.arrival_ticket %}
-            <span class="ticket-file-badge" style="display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:#0284c7;background:#e0f2fe;padding:2px 6px;border-radius:3px;" title="{{ gst.arrival_ticket }}">
-              <a href="{{ url_for('guest_house.download_ticket', filename=gst.arrival_ticket) }}" target="_blank" style="color:inherit;text-decoration:none;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;">✓ {{ gst.arrival_ticket.split('_', 2)[-1] if '_' in gst.arrival_ticket else gst.arrival_ticket }}</a>
-              <button type="button" onclick="clearTicketFile(this)" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0;line-height:1;" title="Remove ticket">&times;</button>
+            <span class="ticket-file-badge" style="display:inline-flex;align-items:center;gap:2px;font-size:10px;color:#0284c7;background:#e0f2fe;padding:1px 4px;border-radius:3px;" title="{{ gst.arrival_ticket }}">
+              <a href="{{ url_for('guest_house.download_ticket', filename=gst.arrival_ticket) }}" target="_blank" style="color:inherit;text-decoration:none;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;">✓ {{ gst.arrival_ticket.split('_', 2)[-1] if '_' in gst.arrival_ticket else gst.arrival_ticket }}</a>
+              <button type="button" onclick="clearTicketFile(this)" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:11px;padding:0;line-height:1;" title="Remove ticket">&times;</button>
             </span>
           {% endif %}
         </div>
-        <div class="ticket-upload-btn-wrap" style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">
+        <div class="ticket-upload-btn-wrap" style="display:inline-flex;align-items:center;gap:2px;flex-shrink:0;">
           <input type="hidden" name="g_departure_ticket_existing" value="{{ gst.departure_ticket or '' }}">
-          <label class="btn btn-xs ticket-upload-btn" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;background:{{ '#f0fdf4' if gst.departure_ticket else '#f8fafc' }};border:1px solid {{ '#86efac' if gst.departure_ticket else '#cbd5e1' }};border-radius:4px;color:{{ '#166534' if gst.departure_ticket else '#334155' }};cursor:pointer;white-space:nowrap;line-height:1.2;margin:0;" title="Upload departure travel ticket">
+          <label class="btn btn-xs ticket-upload-btn" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 5px;background:{{ '#f0fdf4' if gst.departure_ticket else '#f8fafc' }};border:1px solid {{ '#86efac' if gst.departure_ticket else '#cbd5e1' }};border-radius:4px;color:{{ '#166534' if gst.departure_ticket else '#334155' }};cursor:pointer;white-space:nowrap;line-height:1.2;margin:0;" title="Upload departure travel ticket">
             <input type="file" name="g_departure_ticket" class="ticket-file-input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;" onchange="handleTicketFileSelect(this, 'Departure')">
-            <span class="upload-label">Upload Departure travel ticket</span>
+            <span class="upload-label">📎 Departure ticket</span>
           </label>
           {% if gst.departure_ticket %}
-            <span class="ticket-file-badge" style="display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:#0284c7;background:#e0f2fe;padding:2px 6px;border-radius:3px;" title="{{ gst.departure_ticket }}">
-              <a href="{{ url_for('guest_house.download_ticket', filename=gst.departure_ticket) }}" target="_blank" style="color:inherit;text-decoration:none;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;">✓ {{ gst.departure_ticket.split('_', 2)[-1] if '_' in gst.departure_ticket else gst.departure_ticket }}</a>
-              <button type="button" onclick="clearTicketFile(this)" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0;line-height:1;" title="Remove ticket">&times;</button>
+            <span class="ticket-file-badge" style="display:inline-flex;align-items:center;gap:2px;font-size:10px;color:#0284c7;background:#e0f2fe;padding:1px 4px;border-radius:3px;" title="{{ gst.departure_ticket }}">
+              <a href="{{ url_for('guest_house.download_ticket', filename=gst.departure_ticket) }}" target="_blank" style="color:inherit;text-decoration:none;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;">✓ {{ gst.departure_ticket.split('_', 2)[-1] if '_' in gst.departure_ticket else gst.departure_ticket }}</a>
+              <button type="button" onclick="clearTicketFile(this)" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:11px;padding:0;line-height:1;" title="Remove ticket">&times;</button>
             </span>
           {% endif %}
         </div>
       </div>
     </td>
-    <td><select name="g_gender" aria-label="Gender" style="min-width:90px">{% for x in ['', 'Male', 'Female', 'Other'] %}<option {{ 'selected' if (gst.gender or '') == x }}>{{ x }}</option>{% endfor %}</select></td>
-    <td><input type="tel" name="g_mobile" value="{{ gst.mobile or '' }}" aria-label="Mobile" placeholder="10-digit mobile" pattern="(\+?\d{1,4}[- ]?)?[0-9]{10}" title="Please enter a valid 10-digit mobile number"></td>
-    <td><input type="email" name="g_email" value="{{ gst.email or '' }}" aria-label="Email" placeholder="guest@example.com" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address"></td>
-    <td><input type="text" name="g_org" value="{{ gst.organisation or '' }}" aria-label="Organisation" placeholder="same as above"></td>
-    <td><input type="text" name="g_designation" value="{{ gst.designation or '' }}" aria-label="Designation"></td>
-    <td><input type="datetime-local" name="g_arrival" value="{{ dtl(gst.arrival) }}" aria-label="Arrival" required {% if min_arrival %}min="{{ min_arrival }}"{% endif %}></td>
-    <td><input type="datetime-local" name="g_departure" value="{{ dtl(gst.departure) }}" aria-label="Departure" required {% if min_departure %}min="{{ min_departure }}"{% endif %}></td>
-    <td><button type="button" class="btn btn-sm btn-bad" data-remove aria-label="Remove guest">✕</button></td>
+    <td style="width:70px;padding:4px 3px;"><select name="g_gender" aria-label="Gender" style="width:100%;min-width:65px;">{% for x in ['', 'Male', 'Female', 'Other'] %}<option {{ 'selected' if (gst.gender or '') == x }}>{{ x }}</option>{% endfor %}</select></td>
+    <td style="width:100px;padding:4px 3px;"><input type="tel" name="g_mobile" value="{{ gst.mobile or '' }}" aria-label="Mobile" placeholder="10-digit mobile" pattern="(\+?\d{1,4}[- ]?)?[0-9]{10}" title="Please enter a valid 10-digit mobile number" style="width:100%;min-width:92px;"></td>
+    <td style="width:115px;padding:4px 3px;"><input type="email" name="g_email" value="{{ gst.email or '' }}" aria-label="Email" placeholder="guest@example.com" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address" style="width:100%;min-width:105px;"></td>
+    <td style="width:100px;padding:4px 3px;"><input type="text" name="g_org" value="{{ gst.organisation or '' }}" aria-label="Organisation" placeholder="Organisation" style="width:100%;min-width:92px;"></td>
+    <td style="width:100px;padding:4px 3px;"><input type="text" name="g_designation" value="{{ gst.designation or '' }}" aria-label="Designation" placeholder="Designation" style="width:100%;min-width:92px;"></td>
+    <td style="width:138px;padding:4px 3px;"><input type="datetime-local" name="g_arrival" value="{{ dtl(gst.arrival) }}" aria-label="Arrival" required {% if min_arrival %}min="{{ min_arrival }}"{% endif %} style="width:100%;min-width:132px;"></td>
+    <td style="width:138px;padding:4px 3px;"><input type="datetime-local" name="g_departure" value="{{ dtl(gst.departure) }}" aria-label="Departure" required {% if min_departure %}min="{{ min_departure }}"{% endif %} style="width:100%;min-width:132px;"></td>
+    <td style="width:28px;vertical-align:middle;text-align:center;padding:4px 2px;"><button type="button" class="btn btn-sm btn-bad" data-remove aria-label="Remove guest" style="padding:2px 5px;height:26px;line-height:1;">✕</button></td>
   </tr>
 {% endmacro %}
 {% macro need(field, question, note=None, note_label='', note_help='') %}
@@ -83,6 +83,42 @@
 {% endmacro %}
 {% block page %}
 <style>
+/* Guests Table Compactness - prevents horizontal scrolling */
+.guests-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+}
+.guests-table {
+  width: 100% !important;
+  border-collapse: collapse;
+}
+.guests-table th {
+  padding: 6px 4px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  white-space: nowrap !important;
+  background: #f8fafc !important;
+}
+.guests-table td {
+  padding: 4px 3px !important;
+  vertical-align: top;
+}
+.guests-table td input,
+.guests-table td select {
+  min-width: unset !important;
+  height: 29px !important;
+  font-size: 11.5px !important;
+  padding: 2px 5px !important;
+  box-sizing: border-box !important;
+}
+.guests-table td input[type="datetime-local"] {
+  font-size: 11px !important;
+  padding: 2px 3px !important;
+}
+
 .arr-need-block { display: block !important; padding: 12px 0; border-bottom: 1px dashed var(--border); }
 .arr-need-top { display: flex; align-items: center; gap: 20px; }
 .arr-need-top .q { width: 200px; font-weight: 500; }
@@ -662,8 +698,19 @@
     <div class="card-head"><h2>Guests</h2>
       <div class="row"><button type="button" class="btn btn-sm" id="copyDates" title="Fill empty dates from guest 1">Copy guest 1 dates to all</button>
         <button type="button" class="btn btn-sm btn-primary" data-add>+ Add guest</button></div></div>
-    <div class="tbl-wrap"><table class="tbl compact">
-      <thead><tr><th>#</th><th class="req" style="min-width:360px">Name</th><th>Gender</th><th>Mobile</th><th>Email</th><th>Organisation</th><th>Designation</th><th class="req">Arrival</th><th class="req">Departure</th><th></th></tr></thead>
+    <div class="tbl-wrap guests-table-wrap"><table class="tbl compact guests-table">
+      <thead><tr>
+        <th style="width:20px;text-align:center">#</th>
+        <th class="req" style="min-width:170px">Name</th>
+        <th style="width:70px">Gender</th>
+        <th style="width:100px">Mobile</th>
+        <th style="width:115px">Email</th>
+        <th style="width:100px">Organisation</th>
+        <th style="width:100px">Designation</th>
+        <th class="req" style="width:138px">Arrival</th>
+        <th class="req" style="width:138px">Departure</th>
+        <th style="width:28px"></th>
+      </tr></thead>
       <tbody data-rows>{% for gst in guests %}{{ guest_row(gst) }}{% endfor %}</tbody>
     </table></div>
     <template>{{ guest_row({}) }}</template>
@@ -928,7 +975,7 @@ function renderDropLocationMultiSelector(gidx, dkey, currentVal, placeholder, is
   `;
 }
 
-// 3. Searchable Single-select for Food (Morning, Evening, Night)
+// 3. Searchable Single-select for Food (Morning, Afternoon, Night)
 function renderFoodLocationSelector(mealType, gidx, dkey, currentVal, placeholder, isVisible) {
   currentVal = (currentVal || "").trim();
   return `
@@ -1197,7 +1244,7 @@ function setDayFullDay(gidx, dkey, isYes) {
     vehicleState[k].p = true;
     vehicleState[k].d = true;
 
-    // Automatically set food Morning, Evening, Night to Yes
+    // Automatically set food Morning, Afternoon, Night to Yes
     foodState[k].m = true;
     foodState[k].e = true;
     foodState[k].n = true;
@@ -1397,13 +1444,13 @@ function renderDailyArrangements() {
                   }).join('')}
                 </tr>
                 <tr>
-                  <td class="row-hdr">Evening</td>
+                  <td class="row-hdr">Afternoon</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = foodState[k] || {};
                     return `
                       <td style="text-align:center;vertical-align:top;padding:8px 6px">
-                        <div class="yn yn-sm" role="radiogroup" aria-label="Evening">
+                        <div class="yn yn-sm" role="radiogroup" aria-label="Afternoon">
                           <input type="radio" id="fe_${g.idx}_${d.key}_1" name="fe_${g.idx}_${d.key}" value="1" data-f-evening data-gidx="${g.idx}" data-dkey="${d.key}" ${st.e ? 'checked' : ''}>
                           <label for="fe_${g.idx}_${d.key}_1">Yes</label>
                           <input type="radio" id="fe_${g.idx}_${d.key}_0" name="fe_${g.idx}_${d.key}" value="0" data-f-evening-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.e ? 'checked' : ''}>
@@ -1539,7 +1586,7 @@ document.addEventListener("change", (e) => {
     if (locInput && foodState[k].m) locInput.focus();
   }
 
-  // Individual Evening toggle
+  // Individual Afternoon toggle
   if (e.target.matches("[data-f-evening], [data-f-evening-no]")) {
     const gidx = e.target.dataset.gidx;
     const dkey = e.target.dataset.dkey;
@@ -2012,7 +2059,7 @@ if (reqForm) {
             const meals = [];
             if (st.fd) meals.push("Full day" + (st.fdl ? ` (${st.fdl})` : ""));
             if (st.m) meals.push("Morning" + (st.ml ? ` (${st.ml})` : ""));
-            if (st.e) meals.push("Evening" + (st.el ? ` (${st.el})` : ""));
+            if (st.e) meals.push("Afternoon" + (st.el ? ` (${st.el})` : ""));
             if (st.n) meals.push("Night" + (st.nl ? ` (${st.nl})` : ""));
             gLines.push(`  • ${d.label}${d.subLabel ? ' (' + d.subLabel + ')' : ''}: ${meals.join(", ")}`);
           }
@@ -3033,7 +3080,7 @@ function clearTicketFile(btn) {
     const lbl = uploadBtn.querySelector('.upload-label');
     if (lbl) {
       const isArr = uploadBtn.title && uploadBtn.title.toLowerCase().includes('arrived');
-      lbl.textContent = isArr ? 'Upload Arrived travel ticket' : 'Upload Departure travel ticket';
+      lbl.textContent = isArr ? '📎 Arrived ticket' : '📎 Departure ticket';
     }
   }
 }
