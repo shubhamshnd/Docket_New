@@ -38,10 +38,13 @@ def index():
 def employees():
     q = request.args.get("q", "").strip()
     status = request.args.get("status", "Active")
+    source = request.args.get("source", "").strip()
     page = max(1, request.args.get("page", 1, type=int))
     query = Employee.query
     if status:
         query = query.filter(Employee.status == status)
+    if source:
+        query = query.filter(Employee.source == source)
     if request.args.get("dept"):
         query = query.filter(Employee.department == request.args["dept"])
     if request.args.get("no_manager"):
@@ -53,7 +56,7 @@ def employees():
     total = query.count()
     people = query.order_by(Employee.name).offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
     return render_template("admin/employees.html", people=people, total=total, page=page, page_size=PAGE_SIZE,
-                           departments=all_departments())
+                           departments=all_departments(), source=source)
 
 
 @bp.route("/employees/new", methods=["GET", "POST"])
@@ -154,13 +157,21 @@ def _get_odbc():
 
 
 # ---------------------------------------------------------------- sync
+VIEW_LABELS = {
+    "view_EmployeeMaster_Report_Staff": "Employees (Staff)",
+    "view_EmployeeMaster_Report_Associates": "Associates (Contractors)",
+}
+
+
 @bp.route("/sync", methods=["GET", "POST"])
 @superadmin_required
 def sync_page():
     result = None
     odbc = _get_odbc()
+    saved_cfg = sync.get_sync_config()
     if request.method == "POST":
         deactivate = bool(request.form.get("deactivate_missing"))
+        deactivate_unselected = bool(request.form.get("deactivate_unselected"))
         try:
             if request.form.get("mode") == "file":
                 upload = request.files.get("file")
@@ -168,17 +179,31 @@ def sync_page():
                     raise ValueError("Choose a file to upload.")
                 header, rows = sync.read_file(upload.filename, upload.stream)
                 records = sync.normalize(header, rows, "upload")
+                result = sync.upsert(records, deactivate_missing=deactivate)
             else:
                 if not odbc:
                     raise ValueError("SOURCE_ODBC is not configured in .env.")
+                views = request.form.getlist("views")
+                if not views:
+                    raise ValueError("Please select at least one view to sync (e.g. Employees).")
+                active_only = bool(request.form.get("active_only"))
+
+                # Persist sync choices so they remain the same until explicitly changed
+                sync.save_sync_config(
+                    views=views,
+                    active_only=active_only,
+                    deactivate_missing=deactivate,
+                    deactivate_unselected=True,
+                )
+                saved_cfg = sync.get_sync_config()
+
                 records = []
-                views = request.form.getlist("views") or list(current_app.config["SOURCE_VIEWS"])
                 for view in views:
-                    header, rows = sync.fetch_view(odbc, view, bool(request.form.get("active_only")))
+                    header, rows = sync.fetch_view(odbc, view, active_only)
                     records += sync.normalize(header, rows, current_app.config["SOURCE_VIEWS"].get(view, view))
                 # staff first so it wins inside one run as well
                 records.sort(key=lambda r: sync.SOURCE_PRIORITY.get(r["source"], 9), reverse=True)
-            result = sync.upsert(records, deactivate_missing=deactivate)
+                result = sync.upsert(records, deactivate_missing=deactivate, deactivate_unselected=True)
             db.session.commit()
             total_kept = result.get("kept_manual", 0) + result.get("kept_staff", 0)
             msg = (
@@ -194,8 +219,18 @@ def sync_page():
             db.session.rollback()
             current_app.logger.exception("Employee sync failed")
             flash(f"Sync failed: {exc}", "error")
-    return render_template("admin/sync.html", result=result, views=current_app.config["SOURCE_VIEWS"],
-                           columns=sync.COLUMNS, odbc_ready=bool(odbc))
+    return render_template(
+        "admin/sync.html",
+        result=result,
+        views=current_app.config["SOURCE_VIEWS"],
+        view_labels=VIEW_LABELS,
+        saved_views=saved_cfg.get("views", ["view_EmployeeMaster_Report_Staff"]),
+        saved_active_only=saved_cfg.get("active_only", True),
+        saved_deactivate_missing=saved_cfg.get("deactivate_missing", False),
+        saved_deactivate_unselected=saved_cfg.get("deactivate_unselected", False),
+        columns=sync.COLUMNS,
+        odbc_ready=bool(odbc),
+    )
 
 
 # ---------------------------------------------------------------- app configuration

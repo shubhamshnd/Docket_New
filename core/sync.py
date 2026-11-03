@@ -85,7 +85,7 @@ def normalize(header, rows, source):
     return list(records.values())
 
 
-def upsert(records, deactivate_missing=False):
+def upsert(records, deactivate_missing=False, deactivate_unselected=False):
     """Insert/update employees. Returns a stats dict. Caller commits."""
     now = datetime.now()
     stats = {
@@ -148,6 +148,20 @@ def upsert(records, deactivate_missing=False):
             if emp.source in sources and emp.employee_id not in seen and emp.is_active and not emp.is_superadmin:
                 emp.status = "Inactive"
                 stats["deactivated"] += 1
+
+    if deactivate_unselected and records:
+        synced_sources = {r["source"] for r in records}
+        for emp in existing.values():
+            if (
+                emp.source not in synced_sources
+                and emp.source != "manual"
+                and emp.is_active
+                and not emp.is_superadmin
+                and emp.employee_id != "admin"
+            ):
+                emp.status = "Inactive"
+                stats["deactivated"] += 1
+
     db.session.flush()
     return stats
 
@@ -179,3 +193,35 @@ def fetch_view(odbc, view, active_only=False):
         cur = conn.cursor()
         cur.execute(query)
         return [c[0].strip() for c in cur.description], [list(r) for r in cur.fetchall()]
+
+
+def get_sync_config():
+    """Retrieve saved sync configuration from AppSetting (app_code='core_sync')."""
+    import json
+    from core.models import AppSetting
+    row = db.session.get(AppSetting, ("core_sync", "config"))
+    if row and row.value:
+        try:
+            return json.loads(row.value)
+        except Exception:
+            pass
+    return {
+        "views": ["view_EmployeeMaster_Report_Staff"],
+        "active_only": True,
+        "deactivate_missing": False,
+        "deactivate_unselected": False,
+    }
+
+
+def save_sync_config(views, active_only=True, deactivate_missing=False, deactivate_unselected=False):
+    """Save sync configuration to AppSetting so it remains persistent across syncs."""
+    import json
+    from core.models import AppSetting
+    row = db.session.get(AppSetting, ("core_sync", "config")) or AppSetting(app_code="core_sync", key="config")
+    row.value = json.dumps({
+        "views": list(views),
+        "active_only": bool(active_only),
+        "deactivate_missing": bool(deactivate_missing),
+        "deactivate_unselected": bool(deactivate_unselected),
+    })
+    db.session.add(row)

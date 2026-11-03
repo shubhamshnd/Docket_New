@@ -8,14 +8,45 @@
     <h2>Sync from Mantra (SQL Server)</h2>
     {% if not odbc_ready %}<p class="flash flash-info">Set <code>SOURCE_ODBC</code> in <code>.env</code> and install
       <code>pyodbc</code> to enable.</p>{% endif %}
+    <div style="display:flex;gap:8px;margin:8px 0 12px;align-items:center">
+      <span class="small muted">Quick select:</span>
+      <button type="button" class="btn btn-sm" onclick="setSyncScope('employee')" style="cursor:pointer">Only Employees</button>
+      <button type="button" class="btn btn-sm" onclick="setSyncScope('all')" style="cursor:pointer">Employees & Associates</button>
+    </div>
     {% for view, label in views.items() %}
-    <label><input type="checkbox" name="views" value="{{ view }}" checked> {{ label|title }} <span
-        class="muted small">dbo.{{ view }}</span></label>
+    {% set friendly = view_labels.get(view, label|title) %}
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <input type="checkbox" name="views" value="{{ view }}" {{ 'checked' if view in saved_views }}>
+      <span><b>{{ friendly }}</b> <span class="muted small">dbo.{{ view }}</span></span>
+    </label>
     {% endfor %}
-    <label><input type="checkbox" name="active_only" value="1" checked> Active employees only</label>
-    <label><input type="checkbox" name="deactivate_missing" value="1"> Mark employees missing from the feed as Inactive</label>
-    <button class="btn btn-primary" {{ 'disabled' if not odbc_ready }} style="margin-top:10px">Run sync</button>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px">
+      <input type="checkbox" name="active_only" value="1" {{ 'checked' if saved_active_only }}> Active employees only
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:4px">
+      <input type="checkbox" name="deactivate_missing" value="1" {{ 'checked' if saved_deactivate_missing }}> Mark missing employees from synced feeds as Inactive
+    </label>
+    <div class="help" style="margin-top:12px;padding:8px 12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;color:#0369a1;font-size:12px;line-height:1.4">
+      ℹ️ <b>Sync & Display Rule:</b>
+      <ul style="margin:4px 0 0 18px;padding:0">
+        <li>When syncing <b>Only Employees</b>, only employees are synced and displayed in <b>EMPLOYEES</b> (associates become inactive and hidden).</li>
+        <li>When syncing <b>Employees & Associates</b>, both are synced and displayed in <b>EMPLOYEES</b>.</li>
+        <li>Your chosen selection is remembered automatically until you change it.</li>
+      </ul>
+    </div>
+    <button class="btn btn-primary" {{ 'disabled' if not odbc_ready }} style="margin-top:12px">Run sync</button>
     <p class="help">Schedule nightly with <code>flask sync-employees</code>.</p>
+    <script>
+      function setSyncScope(scope) {
+        document.querySelectorAll('input[name="views"]').forEach(function(cb) {
+          if (scope === 'employee') {
+            cb.checked = cb.value.toLowerCase().includes('staff');
+          } else if (scope === 'all') {
+            cb.checked = true;
+          }
+        });
+      }
+    </script>
   </form>
   <form method="post" enctype="multipart/form-data" class="card">
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="mode" value="file">

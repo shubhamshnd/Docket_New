@@ -36,15 +36,20 @@ def init_app(app):
                 return
             records = []
             views = dict(app.config["SOURCE_VIEWS"])
+            cfg = sync.get_sync_config()
             if staff_only and not assoc_only:
                 views = {k: v for k, v in views.items() if v == "staff"}
             elif assoc_only and not staff_only:
                 views = {k: v for k, v in views.items() if v == "associates"}
+            else:
+                saved_views = cfg.get("views", ["view_EmployeeMaster_Report_Staff"])
+                views = {k: v for k, v in views.items() if k in saved_views}
             for view, source in views.items():
                 header, rows = sync.fetch_view(app.config["SOURCE_ODBC"], view, active_only)
                 records += sync.normalize(header, rows, source)
             records.sort(key=lambda r: sync.SOURCE_PRIORITY.get(r["source"], 9), reverse=True)
-        stats = sync.upsert(records, deactivate_missing)
+        deact_unsel = True
+        stats = sync.upsert(records, deactivate_missing=deactivate_missing, deactivate_unselected=deact_unsel)
         db.session.commit()
         total_kept = stats.get("kept_manual", 0) + stats.get("kept_staff", 0)
         click.echo(
