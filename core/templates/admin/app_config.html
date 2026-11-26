@@ -101,14 +101,15 @@
 <div class="org-workspace">
   <div class="stack" style="min-width:0">
     <div class="card">
-      <div class="card-head"><h2>Approval org chart</h2>
+      <div class="card-head">
+        <h2>Approval org chart <span style="font-size: 13.5px; font-weight: normal; color: var(--muted); margin-left: 6px;">· {{ g.site.name if g.site else 'All sites' }}</span></h2>
         <form method="post">{{ hidden('add') }}<button class="btn btn-sm">+ Top level</button></form></div>
       <p class="help" style="margin-top:-6px">Approvals run <b>bottom to top</b>. A request enters at the deepest box tagged with the applicant's department
         (or the box above the applicant, if they're in the chart) and climbs to the top. Anyone in a box can approve for it.
         Changes apply to new submissions; requests already in approval keep their approvers.</p>
       <div class="org-scroll">
         {% if roots %}<ul class="org">{% for r in roots %}{{ box(r) }}{% endfor %}</ul>
-        {% else %}<div class="empty">No levels yet - requests are approved immediately. Add a top level to start.</div>{% endif %}
+        {% else %}<div class="empty">No approval levels yet for {{ g.site.name if g.site else 'this site' }} - requests are approved immediately. Click <b>+ Top level</b> to start.</div>{% endif %}
       </div>
     </div>
     <form class="card" method="get">

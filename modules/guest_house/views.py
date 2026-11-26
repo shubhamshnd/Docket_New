@@ -155,18 +155,51 @@ def on_approval(ref_id, outcome, actor, remarks):
            cc_people=hierarchy, include_link_in_email=False)
 
     if outcome == "approved":
+        first_arr_appr = req.first_arrival.strftime('%d %b %Y %H:%M') if req.first_arrival else '-'
         desk_body = (
             f"Dear Administration Desk,\n\n"
             f"Guest requisition {req.req_no} has been approved.\n\n"
             f"Applicant: {req.applicant.name} ({req.department or '-'})\n"
-            f"First Arrival: {req.first_arrival:%d %b %Y %H:%M if req.first_arrival else '-'}\n"
+            f"First Arrival: {first_arr_appr}\n"
             f"Guests: {len(req.guests)}\n\n"
             f"Please proceed with the arrangements in Docket.\n\n"
             f"Best regards,\nAdmin"
         )
+        desk_html = (
+            f'<div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000; line-height: 1.5; margin: 0; padding: 12px;">'
+            f'<p style="margin: 0 0 12px 0;">Dear Administration Desk,</p>'
+            f'<p style="margin: 0 0 16px 0;">Guest requisition {req.req_no} has been approved.</p>'
+            f'<table style="border-collapse: collapse; border: 1px solid #000000; font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; width: 100%; max-width: 580px; margin: 16px 0;">'
+            f'<tbody>'
+            f'<tr>'
+            f'<td style="border: 1px solid #000000; padding: 6px 12px; width: 130px; color: #000000; vertical-align: top; white-space: nowrap;">Request No:</td>'
+            f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req.req_no}</td>'
+            f'</tr>'
+            f'<tr>'
+            f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Applicant:</td>'
+            f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req.applicant.name} ({req.department or "-"})</td>'
+            f'</tr>'
+            f'<tr>'
+            f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">First Arrival:</td>'
+            f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{first_arr_appr}</td>'
+            f'</tr>'
+            f'<tr>'
+            f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Guests:</td>'
+            f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{len(req.guests)} guest(s)</td>'
+            f'</tr>'
+            f'<tr>'
+            f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Status:</td>'
+            f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">Approved - Arrangement needed</td>'
+            f'</tr>'
+            f'</tbody>'
+            f'</table>'
+            f'<p style="margin: 14px 0;">Please proceed with the arrangements in Docket.</p>'
+            f'<p style="margin: 16px 0 0 0;">Best regards,<br>Admin</p>'
+            f'</div>'
+        )
         notify(_desk(), CODE, req.id, f"{req.req_no} approved - arrangement needed",
                url_for("guest_house.arrange", req_id=req.id),
-               desk_body, kind="action", include_link_in_email=False)
+               desk_body, kind="action", include_link_in_email=False, html_body=desk_html)
 
 
 # ------------------------------------------------------------------ pages
@@ -354,7 +387,7 @@ def _submit(req, is_resubmit):
         f"Dear Admin,\n\n"
         f"A new guest requisition {req.req_no} has come, please check.\n\n"
         f"Request No: {req.req_no}\n"
-            f"Applicant: {req.applicant.name} ({req.department or '-'})\n"
+        f"Applicant: {req.applicant.name} ({req.department or '-'})\n"
         f"Visit Type: {req.visit_type}{(' - ' + req.purpose) if req.purpose else ''}\n"
         f"Guests: {len(req.guests)} guest(s)\n"
         f"Stay: {first_arr} to {last_dep}\n"
@@ -362,8 +395,47 @@ def _submit(req, is_resubmit):
         f"Status: Awaiting approval\n\n"
         f"Best regards,\nAdmin"
     )
+    desk_html = (
+        f'<div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000; line-height: 1.5; margin: 0; padding: 12px;">'
+        f'<p style="margin: 0 0 12px 0;">Dear Admin,</p>'
+        f'<p style="margin: 0 0 16px 0;">A new guest requisition {req.req_no} has come, please check.</p>'
+        f'<table style="border-collapse: collapse; border: 1px solid #000000; font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; width: 100%; max-width: 580px; margin: 16px 0;">'
+        f'<tbody>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; width: 130px; color: #000000; vertical-align: top; white-space: nowrap;">Request No:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req.req_no}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Applicant:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req.applicant.name} ({req.department or "-"})</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Visit Type:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req.visit_type}{(" - " + req.purpose) if req.purpose else ""}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Guests:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{len(req.guests)} guest(s)</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Stay:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{first_arr} to {last_dep}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Requirements:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{needs_str}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Status:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">Awaiting approval</td>'
+        f'</tr>'
+        f'</tbody>'
+        f'</table>'
+        f'<p style="margin: 16px 0 0 0;">Best regards,<br>Admin</p>'
+        f'</div>'
+    )
     notify(_desk(), CODE, req.id, f"New request {req.req_no} has come, please check", _link(req),
-           desk_body, kind="update", include_link_in_email=False)
+           desk_body, kind="update", include_link_in_email=False, html_body=desk_html)
 
     # Acknowledge to requester
     ack_body = (
@@ -375,9 +447,41 @@ def _submit(req, is_resubmit):
         f"You will be notified as each approver in your hierarchy reviews the request.\n\n"
         f"Best regards,\nAdmin"
     )
+    ack_html = (
+        f'<div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000; line-height: 1.5; margin: 0; padding: 12px;">'
+        f'<p style="margin: 0 0 12px 0;">Dear {req.applicant.name},</p>'
+        f'<p style="margin: 0 0 16px 0;">Your guest requisition {req.req_no} has been submitted successfully.</p>'
+        f'<table style="border-collapse: collapse; border: 1px solid #000000; font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; width: 100%; max-width: 580px; margin: 16px 0;">'
+        f'<tbody>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; width: 130px; color: #000000; vertical-align: top; white-space: nowrap;">Request No:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req.req_no}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Visit Type:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req.visit_type}{(" - " + req.purpose) if req.purpose else ""}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Stay:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{first_arr} to {last_dep}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Requirements:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{needs_str}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Status:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">Pending approval</td>'
+        f'</tr>'
+        f'</tbody>'
+        f'</table>'
+        f'<p style="margin: 14px 0;">You will be notified as each approver in your hierarchy reviews the request.</p>'
+        f'<p style="margin: 16px 0 0 0;">Best regards,<br>Admin</p>'
+        f'</div>'
+    )
     hierarchy = get_applicant_hierarchy(req)
     notify([req.applicant], CODE, req.id, f"Requisition {req.req_no} submitted", _link(req),
-           ack_body, kind="update", cc_people=hierarchy, include_link_in_email=False)
+           ack_body, kind="update", cc_people=hierarchy, include_link_in_email=False, html_body=ack_html)
 
     if outcome == "approved":  # empty chain
         on_approval(req.id, "approved", g.user, "No approval steps configured")

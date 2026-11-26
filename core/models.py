@@ -140,6 +140,7 @@ class ApprovalNode(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     app_code = db.Column(db.String(50), nullable=False, index=True)
+    site_id = db.Column(db.Integer, db.ForeignKey("sites.id", ondelete="CASCADE"), nullable=True, index=True)
     parent_id = db.Column(db.Integer, db.ForeignKey("approval_nodes.id", ondelete="CASCADE"))
     position = db.Column(db.Integer, nullable=False, default=0)  # order among siblings
     label = db.Column(db.String(150), nullable=False)
@@ -148,6 +149,7 @@ class ApprovalNode(db.Model):
     entry_all = db.Column(db.Boolean, default=False, nullable=False)
     condition = db.Column(db.String(80), default="", nullable=False)  # app flag; level applies only when true
 
+    site = db.relationship("Site")
     parent = db.relationship("ApprovalNode", remote_side=[id], backref=db.backref(
         "children", order_by="ApprovalNode.position", cascade="all"))
     members = db.relationship("Employee", secondary=approval_node_members, order_by="Employee.name")

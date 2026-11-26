@@ -180,7 +180,13 @@ def send_approval_request_email(task, record, earlier_info=""):
 
 def route(app_code, applicant):
     """Boxes from the entry point up to the top, or raise ApprovalError. [] when the app has no chart."""
-    nodes = ApprovalNode.query.filter_by(app_code=app_code).all()
+    nodes_q = ApprovalNode.query.filter_by(app_code=app_code)
+    applicant_site_id = getattr(applicant, "site_id", None)
+    if applicant_site_id:
+        site_nodes = nodes_q.filter_by(site_id=applicant_site_id).all()
+        nodes = site_nodes if site_nodes else nodes_q.filter(ApprovalNode.site_id.is_(None)).all()
+    else:
+        nodes = nodes_q.all()
     if not nodes:
         return []
     deepest = lambda ns: max(ns, key=lambda n: (n.depth, -n.id))  # noqa: E731

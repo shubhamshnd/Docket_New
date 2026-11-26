@@ -321,12 +321,16 @@ def app_config(code):
         grants.setdefault(gr.permission, []).append(gr)
     names = {e.employee_id: e.name for e in Employee.query.filter(Employee.employee_id.in_(
         [gr.subject_value for gs in grants.values() for gr in gs if gr.subject_type == "employee"])).all()}
-    nodes = ApprovalNode.query.filter_by(app_code=code).order_by(ApprovalNode.position, ApprovalNode.id).all()
+    curr_site_id = g.get("site_id")
+    nodes_q = ApprovalNode.query.filter_by(app_code=code)
+    if curr_site_id:
+        nodes_q = nodes_q.filter_by(site_id=curr_site_id)
+    nodes = nodes_q.order_by(ApprovalNode.position, ApprovalNode.id).all()
     preview_emp = _emp_or_none(request.args.get("preview"))
     preview = approvals.plan(code, preview_emp, {k: True for k in app.conditions}) if preview_emp else None
     people_q = Employee.query.filter_by(status="Active")
-    if g.get("site_id"):
-        people_q = people_q.filter(Employee.site_id == g.site_id)
+    if curr_site_id:
+        people_q = people_q.filter(Employee.site_id == curr_site_id)
     people = people_q.order_by(Employee.name).all()
 
     return render_template(
@@ -375,10 +379,19 @@ def _save_chart(app):
     """Org chart edits. In-flight requests keep their snapshotted approvers; new submissions use the new chart."""
     f = request.form
     action = f.get("action")
+    curr_site_id = g.get("site_id")
     if action == "add":
         parent = _node(app, f.get("parent_id", type=int)) if f.get("parent_id") else None
-        siblings = parent.children if parent else ApprovalNode.query.filter_by(app_code=app.code, parent_id=None).all()
-        db.session.add(ApprovalNode(app_code=app.code, parent=parent, label=f.get("label", "").strip() or "New level",
+        target_site_id = parent.site_id if parent else curr_site_id
+        if parent:
+            siblings = parent.children
+        else:
+            q = ApprovalNode.query.filter_by(app_code=app.code, parent_id=None)
+            if target_site_id:
+                q = q.filter_by(site_id=target_site_id)
+            siblings = q.all()
+        db.session.add(ApprovalNode(app_code=app.code, site_id=target_site_id, parent=parent,
+                                    label=f.get("label", "").strip() or "New level",
                                     position=len(siblings)))
         return None
     node = _node(app, f.get("node_id", type=int))

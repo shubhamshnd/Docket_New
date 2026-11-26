@@ -27,14 +27,14 @@ CHART = ("Unit Head approval (hotel stays)", ["1001"], [], "needs_hotel", [
 ])
 
 
-def _build(spec, parent=None, position=0):
+def _build(spec, parent=None, position=0, site_id=None):
     label, members, entry, condition, children = spec
-    node = ApprovalNode(app_code="guest_house", parent=parent, position=position, label=label, condition=condition,
+    node = ApprovalNode(app_code="guest_house", site_id=site_id, parent=parent, position=position, label=label, condition=condition,
                         entry_departments="\n".join(entry),
                         members=[db.session.get(Employee, m) for m in members])
     db.session.add(node)
     for i, child in enumerate(children):
-        _build(child, node, i)
+        _build(child, node, i, site_id=site_id)
 
 
 def seed():
@@ -70,7 +70,7 @@ def seed():
         if not AppGrant.query.filter_by(app_code="guest_house", permission=perm, subject_type=kind, subject_value=value).first():
             db.session.add(AppGrant(app_code="guest_house", permission=perm, subject_type=kind, subject_value=value))
     if not ApprovalNode.query.filter_by(app_code="guest_house").count():
-        _build(CHART)
+        _build(CHART, site_id=site_jgd.id)
     from modules.guest_house.models import GuestHouse, Hotel, Room, Vehicle, VisitPurpose, ExpenseBorneBy, VISIT_TYPES, EXPENSES_BY
     if not GuestHouse.query.count():
         gh1 = GuestHouse(name="Jaigarh Guest House", location="Jaigarh", contact_phone="02357-000000", site_id=site_jgd.id)
