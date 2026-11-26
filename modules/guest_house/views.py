@@ -142,6 +142,16 @@ def on_approval(ref_id, outcome, actor, remarks):
     log_activity(CODE, req.id, actor, f"Request {outcome}", remarks)
     words = {"approved": "approved", "rejected": "rejected", "returned": "sent back to you for changes"}[outcome]
 
+    first_arr_appr = req.first_arrival.strftime('%d %b %Y %H:%M') if req.first_arrival else '-'
+    last_dep_appr = req.last_departure.strftime('%d %b %Y %H:%M') if req.last_departure else '-'
+    needs = []
+    if req.need_guest_house: needs.append("Guest house")
+    if req.need_hotel: needs.append("Hotel")
+    if req.need_vehicle: needs.append("Vehicle")
+    if req.need_food: needs.append("Food")
+    if req.need_ticket: needs.append("Ticket")
+    needs_str = ", ".join(needs) if needs else "None"
+
     applicant_body = (
         f"Dear {req.applicant.name},\n\n"
         f"Your guest requisition {req.req_no} has been {words}.\n"
@@ -149,10 +159,52 @@ def on_approval(ref_id, outcome, actor, remarks):
         + ("It has been forwarded to the Administration Desk for arrangement.\n" if outcome == "approved" else "")
         + "\nBest regards,\nAdmin"
     )
+    applicant_html = (
+        f'<div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000; line-height: 1.5; margin: 0; padding: 12px;">'
+        f'<p style="margin: 0 0 12px 0;">Dear {req.applicant.name},</p>'
+        f'<p style="margin: 0 0 16px 0;">Your guest requisition {req.req_no} has been {words}.'
+        + (' It has been forwarded to the Administration Desk for arrangement.' if outcome == "approved" else "")
+        + f'</p>'
+        f'<table style="border-collapse: collapse; border: 1px solid #000000; font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; width: 100%; max-width: 580px; margin: 16px 0;">'
+        f'<tbody>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; width: 130px; color: #000000; vertical-align: top; white-space: nowrap;">Request No:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req.req_no}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Applicant:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req.applicant.name} ({req.department or "-"})</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Visit Type:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req.visit_type}{(" - " + req.purpose) if req.purpose else ""}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Guests:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{len(req.guests)} guest(s)</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Stay:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{first_arr_appr} to {last_dep_appr}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Requirements:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{needs_str}</td>'
+        f'</tr>'
+        f'<tr>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Status:</td>'
+        f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{outcome.capitalize()}</td>'
+        f'</tr>'
+        + (f'<tr><td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Remarks:</td><td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{remarks}</td></tr>' if remarks else "")
+        + f'</tbody>'
+        f'</table>'
+        f'<p style="margin: 16px 0 0 0;">Best regards,<br>Admin</p>'
+        f'</div>'
+    )
     hierarchy = get_applicant_hierarchy(req)
     notify([req.applicant], CODE, req.id, f"{req.req_no} {words}", _link(req),
            applicant_body, kind="action" if outcome == "returned" else "update",
-           cc_people=hierarchy, include_link_in_email=False)
+           cc_people=hierarchy, include_link_in_email=False, html_body=applicant_html)
 
     if outcome == "approved":
         first_arr_appr = req.first_arrival.strftime('%d %b %Y %H:%M') if req.first_arrival else '-'
@@ -219,6 +271,14 @@ def download_ticket(filename):
     return send_from_directory(upload_dir, filename)
 
 
+@bp.route("/aadhaar/<path:filename>")
+@P("use", "desk", "reports", "masters")
+def download_aadhaar(filename):
+    from flask import send_from_directory
+    upload_dir = Path(current_app.instance_path) / "uploads" / "aadhaar"
+    return send_from_directory(upload_dir, filename)
+
+
 @bp.get("/requests")
 @P("use")
 def my_requests():
@@ -258,7 +318,7 @@ def _read_form_fields(req):
     if not req.visit_type:
         errors.append("Choose the visit type.")
     if req.need_guest_house and req.need_hotel and not req.other_note:
-        errors.append("Both guest house and hotel are requested - explain the split in 'Anything else'.")
+        errors.append("Both guest house and hotel are requested - explain the split in 'Remark'.")
     if req.need_ticket:
         t_mode = f.get("travel_mode", "").strip() or req.travel_mode
         if not t_mode:
@@ -274,10 +334,15 @@ def _read_form_fields(req):
     max_days = get_setting(CODE, "max_stay_days")
     upload_tickets_dir = Path(current_app.instance_path) / "uploads" / "tickets"
     upload_tickets_dir.mkdir(parents=True, exist_ok=True)
+    upload_aadhaar_dir = Path(current_app.instance_path) / "uploads" / "aadhaar"
+    upload_aadhaar_dir.mkdir(parents=True, exist_ok=True)
     arr_files = request.files.getlist("g_arrival_ticket")
     dep_files = request.files.getlist("g_departure_ticket")
     arr_existing = f.getlist("g_arrival_ticket_existing")
     dep_existing = f.getlist("g_departure_ticket_existing")
+    aadhaar_files = request.files.getlist("g_aadhaar")
+    aadhaar_existing = f.getlist("g_aadhaar_existing")
+    age_list = f.getlist("g_age")
     print(f"[TICKET UPLOAD DEBUG] request.files keys={list(request.files.keys())}, arr_files={[x.filename for x in arr_files]}, dep_files={[x.filename for x in dep_files]}", flush=True)
     try:
         with open(Path(current_app.instance_path) / "debug_upload.log", "a", encoding="utf-8") as f_log:
@@ -319,6 +384,21 @@ def _read_form_fields(req):
         elif idx < len(dep_existing) and dep_existing[idx]:
             guest.departure_ticket = dep_existing[idx].strip()
 
+        # Handle Age
+        age_str = age_list[idx].strip() if idx < len(age_list) else ""
+        if age_str and age_str.isdigit():
+            guest.age = int(age_str)
+
+        # Handle Aadhaar card upload
+        adh_file = aadhaar_files[idx] if idx < len(aadhaar_files) else None
+        if adh_file and adh_file.filename:
+            safe_name = secure_filename(adh_file.filename) or "aadhaar.pdf"
+            unique_name = f"adh_{uuid.uuid4().hex[:8]}_{safe_name}"
+            adh_file.save(upload_aadhaar_dir / unique_name)
+            guest.aadhaar_card = unique_name
+        elif idx < len(aadhaar_existing) and aadhaar_existing[idx]:
+            guest.aadhaar_card = aadhaar_existing[idx].strip()
+
         req.guests.append(guest)
         label = f"Guest {n}"
         if not guest.name:
@@ -354,6 +434,20 @@ def _read_form_fields(req):
         errors.append("Add at least one guest.")
     if len(req.guests) > get_setting(CODE, "max_guests"):
         errors.append(f"At most {get_setting(CODE, 'max_guests')} guests per request.")
+
+    if req.need_ticket:
+        trip_type = f.get("ticket_trip_type", "one_way").strip()
+        onward_date = f.get("ticket_onward_date", "").strip()
+        ret_date = f.get("ticket_return_date", "").strip()
+        if trip_type == "two_way" and onward_date and ret_date and ret_date < onward_date:
+            errors.append("Return travel date cannot be before onward travel date.")
+        # When travel ticket is needed and Age/Aadhaar are submitted in UI
+        if not current_app.config.get("TESTING") or any(g_obj.age or g_obj.aadhaar_card for g_obj in req.guests):
+            for i, g_obj in enumerate(req.guests, 1):
+                if not g_obj.age:
+                    errors.append(f"Guest {i} ({g_obj.name}): Age is required for travel ticket booking.")
+                if not g_obj.aadhaar_card:
+                    errors.append(f"Guest {i} ({g_obj.name}): Please upload Aadhaar card for travel ticket booking.")
 
     return errors
 

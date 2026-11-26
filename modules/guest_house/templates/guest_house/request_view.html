@@ -75,8 +75,8 @@
           {{ req.expenses_by }}{% if req.cost_centre %} · cost centre {{ req.cost_centre }}{% endif %}
           {% endif %}
         </dd>
-        {% if req.other_note %}<dt>Anything else</dt>
-        <dd>{{ req.other_note }}</dd>{% endif %}
+        {% if req.other_note %}<dt>Remark</dt>
+        <dd style="white-space:pre-line">{{ req.other_note }}</dd>{% endif %}
         {% if req.status == 'cancelled' %}<dt>Cancelled</dt>
         <dd>{{ dt(req.cancelled_at) }} - {{ req.cancel_reason }}</dd>{% endif %}
       </dl>
@@ -100,19 +100,24 @@
             {% for gst in req.guests %}
             <tr>
               <td>{{ loop.index }}</td>
-              <td><b>{{ gst.name }}</b>{% if gst.gender %} <span class="muted small">({{ gst.gender }})</span>{% endif
-                %}<div class="small muted">{{ gst.designation or '' }}{% if gst.organisation %} · {{ gst.organisation
-                  }}{% endif %}</div>
+              <td><b>{{ gst.name }}</b>{% if gst.gender %} <span class="muted small">({{ gst.gender }})</span>{% endif %}{% if gst.age %} <span class="badge" style="font-size:10px;background:#f1f5f9;color:#475569;">Age: {{ gst.age }}</span>{% endif %}<div class="small muted">{{ gst.designation or '' }}{% if gst.organisation %} · {{ gst.organisation }}{% endif %}</div>
+                {% if gst.aadhaar_card %}
+                  <div style="margin-top:3px;">
+                    <a href="{{ url_for('guest_house.download_aadhaar', filename=gst.aadhaar_card) }}" target="_blank" class="badge" style="background:#ecfdf5;color:#047857;font-size:10.5px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;" title="View / Download Aadhaar Card: {{ gst.aadhaar_card }}">
+                      Aadhaar card
+                    </a>
+                  </div>
+                {% endif %}
                 {% if gst.arrival_ticket or gst.departure_ticket %}
                   <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
                     {% if gst.arrival_ticket %}
                       <a href="{{ url_for('guest_house.download_ticket', filename=gst.arrival_ticket) }}" target="_blank" class="badge" style="background:#e0f2fe;color:#0369a1;font-size:10.5px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;" title="{{ gst.arrival_ticket }}">
-                        ✈️ Arrived ticket
+                        Arrived ticket
                       </a>
                     {% endif %}
                     {% if gst.departure_ticket %}
                       <a href="{{ url_for('guest_house.download_ticket', filename=gst.departure_ticket) }}" target="_blank" class="badge" style="background:#e0f2fe;color:#0369a1;font-size:10.5px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;" title="{{ gst.departure_ticket }}">
-                        🛫 Departure ticket
+                        Departure ticket
                       </a>
                     {% endif %}
                   </div>

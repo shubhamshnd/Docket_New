@@ -301,11 +301,36 @@ def act(task, actor, action, remarks=""):
             next_people = next_task.candidate_people if next_task else []
             next_names = " / ".join(p.name for p in next_people) if next_people else next_label
 
+            req_no_val = getattr(record, 'req_no', record.approval_title)
             applicant_msg = (
                 f"Dear {record.applicant.name},\n\n"
-                f"Your requisition {getattr(record, 'req_no', record.approval_title)} has been approved at level: {task.label}.\n\n"
+                f"Your requisition {req_no_val} has been approved at level: {task.label}.\n\n"
                 f"Current Status: Pending approval at {next_label} ({next_names}).\n\n"
                 f"Best regards,\nAdmin"
+            )
+            applicant_html = (
+                f'<div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000; line-height: 1.5; margin: 0; padding: 12px;">'
+                f'<p style="margin: 0 0 12px 0;">Dear {record.applicant.name},</p>'
+                f'<p style="margin: 0 0 16px 0;">Your requisition {req_no_val} has been approved at level: <b>{task.label}</b>.</p>'
+                f'<table style="border-collapse: collapse; border: 1px solid #000000; font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; width: 100%; max-width: 580px; margin: 16px 0;">'
+                f'<tbody>'
+                f'<tr>'
+                f'<td style="border: 1px solid #000000; padding: 6px 12px; width: 130px; color: #000000; vertical-align: top; white-space: nowrap;">Request No:</td>'
+                f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{req_no_val}</td>'
+                f'</tr>'
+                f'<tr>'
+                f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Approved Level:</td>'
+                f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{task.label}</td>'
+                f'</tr>'
+                f'<tr>'
+                f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Current Status:</td>'
+                f'<td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">Pending approval at {next_label} ({next_names})</td>'
+                f'</tr>'
+                + (f'<tr><td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top; white-space: nowrap;">Remarks:</td><td style="border: 1px solid #000000; padding: 6px 12px; color: #000000; vertical-align: top;">{remarks}</td></tr>' if remarks else "")
+                + f'</tbody>'
+                f'</table>'
+                f'<p style="margin: 16px 0 0 0;">Best regards,<br>Admin</p>'
+                f'</div>'
             )
             cc_people = []
             try:
@@ -327,7 +352,7 @@ def act(task, actor, action, remarks=""):
 
             notify([record.applicant], task.app_code, task.ref_id,
                    f"{record.approval_title}: approved at {task.label}", _url(record),
-                   applicant_msg, email=True, cc_people=cc_people, include_link_in_email=False)
+                   applicant_msg, email=True, cc_people=cc_people, include_link_in_email=False, html_body=applicant_html)
     else:
         ApprovalTask.query.filter_by(app_code=task.app_code, ref_id=task.ref_id, round=task.round, status="waiting") \
             .update({"status": "cancelled"})

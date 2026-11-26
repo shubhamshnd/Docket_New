@@ -285,7 +285,53 @@ class GuestRequest(db.Model):
     def clean_ticket_note(self):
         if not self.ticket_note:
             return ""
-        import re
+        import re, json
+        m_json = re.search(r"<!--TICKET_DATA:(.*?)-->", self.ticket_note, flags=re.S)
+        if m_json:
+            try:
+                data = json.loads(m_json.group(1))
+                trip_type = data.get("trip_type", "one_way")
+                mode = data.get("mode", "")
+                from_loc = data.get("from", "")
+                to_loc = data.get("to", "")
+                travel_date = data.get("travel_date", "")
+                travel_pref = data.get("travel_pref", "")
+                ret_from = data.get("return_from", "")
+                ret_to = data.get("return_to", "")
+                ret_date = data.get("return_date", "")
+                ret_pref = data.get("return_pref", "")
+                remarks = data.get("remarks", "")
+
+                lines = []
+                type_label = "One way (Single journey)" if trip_type == "one_way" else "Two way (Round trip)"
+                lines.append(f"Trip Type: {type_label}")
+                if mode:
+                    lines.append(f"Travel Mode: {mode}")
+                
+                onward = f"Onward: {from_loc} → {to_loc}" if (from_loc or to_loc) else ""
+                if travel_date:
+                    onward += f" | Date: {travel_date}"
+                if travel_pref:
+                    onward += f" ({travel_pref})"
+                if onward:
+                    lines.append(onward)
+
+                if trip_type == "two_way":
+                    ret = f"Return: {ret_from} → {ret_to}" if (ret_from or ret_to) else ""
+                    if ret_date:
+                        ret += f" | Date: {ret_date}"
+                    if ret_pref:
+                        ret += f" ({ret_pref})"
+                    if ret:
+                        lines.append(ret)
+
+                if remarks:
+                    lines.append(f"Remarks: {remarks}")
+                
+                if lines:
+                    return "\n".join(lines)
+            except Exception:
+                pass
         t = re.sub(r"<!--TRAVEL_MODE:.*?-->", "", self.ticket_note, flags=re.S)
         t = re.sub(r"<!--TICKET_DATA:.*?-->", "", t, flags=re.S)
         return t.strip()
@@ -326,6 +372,8 @@ class Guest(db.Model):
     departure = db.Column(db.DateTime, nullable=False)
     arrival_ticket = db.Column(db.String(255))
     departure_ticket = db.Column(db.String(255))
+    age = db.Column(db.Integer)
+    aadhaar_card = db.Column(db.String(255))
 
     # Filled by the desk
     stay_type = db.Column(db.String(20))  # guest_house / hotel / none
